@@ -128,8 +128,8 @@ aside {
   flex: 0.5;
 }
 
-.merle {
-  border-radius: 50%;
+.zelda {
+  border-radius: 0%;
   width: 50%;
   height: auto;
   align-items: center;
@@ -141,6 +141,35 @@ aside {
 img:hover{
   transform: scale(1.5);
 }
+
+/* CRONOLOGÍA */
+.parent {
+  border: 0px solid black;
+  box-sizing: border-box;
+  display: grid;
+  max-width: 90%;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-auto-flow: row;
+  gap: 50px;
+  margin: 0 auto;
+}
+
+.box {
+  background: none;
+  border: 0px solid black;
+}
+
+.box img {
+  max-width: 100%;
+  height: 100%;
+  transition: 0.25s all ease;
+}
+
+.box img:hover {
+  transform: scale(1.1)
+}
+/* FIN DE CRONOLOGÍA */
 
 @media (max-width: 400px) {
   main {
