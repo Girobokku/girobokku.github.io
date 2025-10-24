@@ -75,7 +75,7 @@
   <script>
     // === CONFIGURACIÓN RÁPIDA ===
     const CONFIG = {
-      horaObjetivo: "25:45",            // hora de revelación (HH:MM formato 24h)
+      horaObjetivo: "22:00",            // hora de revelación (HH:MM formato 24h)
       mensajeAntes: "Revelación a las", // texto antes de la hora
       imagen: "img.jpg"                 // imagen a mostrar (se carga solo al revelar)
     };
@@ -126,12 +126,19 @@
 
     function reveal(){
       // Cargar la imagen justo ahora (evita que se descargue antes)
+
+    }
+
+    /*
+function reveal(){
+      // Cargar la imagen justo ahora (evita que se descargue antes)
       if(!$revealImg.getAttribute('src')){ $revealImg.src = CONFIG.imagen; }
       $countdownCard.classList.add('hidden');
       $revealCard.classList.remove('hidden');
       startFireworks(5000); // 5 segundos de fuegos artificiales
       if (timerId) clearInterval(timerId);
     }
+    */
 
     // Inicio
     let timerId = null;
