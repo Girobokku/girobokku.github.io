@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cuenta atrás</title>
+  <title>Revelación a las 22:30</title>
   <meta name="description" content="Cuenta atrás que revela una imagen hoy a una hora configurable (hora local del navegador)." />
   <style>
     :root{
@@ -43,6 +43,10 @@
       .grid{grid-template-columns: repeat(2, minmax(0,1fr))}
     }
   </style>
+  <style>
+    /* Lienzo para fuegos artificiales */
+    .fx{position:fixed; inset:0; pointer-events:none; z-index:999}
+  </style>
 </head>
 <body>
   <main>
@@ -65,22 +69,26 @@
       <p>Necesitas JavaScript para ver la cuenta atrás.</p>
     </noscript>
   </main>
+  <!-- Canvas de efectos -->
+  <canvas id="fx" class="fx"></canvas>
 
   <script>
     // === CONFIGURACIÓN RÁPIDA ===
     const CONFIG = {
-      horaObjetivo: "18:45", // hora de revelación (HH:MM formato 24h)
-      mensajeAntes: "La noticia se revelará a las", // texto antes de la hora
-      imagen: "img.jpg" // imagen a mostrar
+      horaObjetivo: "18:58",            // hora de revelación (HH:MM formato 24h)
+      mensajeAntes: "Revelación a las", // texto antes de la hora
+      imagen: "img.jpg"                 // imagen a mostrar (se carga solo al revelar)
     };
 
-    // === LÓGICA ===
+    // === CÁLCULO DE FECHA OBJETIVO ===
     const [HH, MM] = CONFIG.horaObjetivo.split(":").map(Number);
     const now = new Date();
     const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), HH, MM, 0, 0);
 
+    // Encabezado dinámico
     document.getElementById('headline').innerHTML = `${CONFIG.mensajeAntes} <span id="target-text">${CONFIG.horaObjetivo}</span>`;
 
+    // Referencias de elementos
     const $d = document.getElementById('d');
     const $h = document.getElementById('h');
     const $m = document.getElementById('m');
@@ -89,24 +97,27 @@
     const $countdownCard = document.getElementById('countdown-card');
     const $revealCard = document.getElementById('reveal-card');
     const $revealImg = document.getElementById('reveal-image');
-    $revealImg.src = CONFIG.imagen;
+    const helper = document.getElementById('helper');
 
+    // Utilidades
     function pad(n){ return String(n).padStart(2,'0'); }
-
-    function updateCountdown(){
-      const now = new Date();
-      const diff = targetDate.getTime() - now.getTime();
-
-      if (diff <= 0){
-        reveal();
-        return;
-      }
-      const totalSeconds = Math.floor(diff / 1000);
+    function breakdown(ms){
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
       const days = Math.floor(totalSeconds / 86400);
       const hours = Math.floor((totalSeconds % 86400) / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
+      return {days, hours, minutes, seconds};
+    }
 
+    // Render loop
+    function updateCountdown(){
+      const diff = targetDate.getTime() - Date.now();
+      if (diff <= 0){
+        reveal();
+        return;
+      }
+      const {days, hours, minutes, seconds} = breakdown(diff);
       $d.textContent = days;
       $h.textContent = pad(hours);
       $m.textContent = pad(minutes);
@@ -114,19 +125,24 @@
     }
 
     function reveal(){
+      // Cargar la imagen justo ahora (evita que se descargue antes)
+      if(!$revealImg.getAttribute('src')){ $revealImg.src = CONFIG.imagen; }
       $countdownCard.classList.add('hidden');
       $revealCard.classList.remove('hidden');
-      clearInterval(timerId);
+      startFireworks(5000); // 5 segundos de fuegos artificiales
+      if (timerId) clearInterval(timerId);
     }
 
-    if ((new Date()).getTime() >= targetDate.getTime()){
+    // Inicio
+    let timerId = null;
+    if (Date.now() >= targetDate.getTime()){
       reveal();
     } else {
       updateCountdown();
-      var timerId = setInterval(updateCountdown, 1000);
+      timerId = setInterval(updateCountdown, 1000);
     }
 
-    const helper = document.getElementById('helper');
+    // Accesibilidad: resumen cada 10s
     let a11yTick = 0;
     const a11yInterval = setInterval(() => {
       a11yTick++;
@@ -134,6 +150,83 @@
       const d = Number($d.textContent), h=Number($h.textContent), m=Number($m.textContent), s=Number($s.textContent);
       helper.textContent = `Faltan ${d} día${d!==1?'s':''}, ${h} hora${h!==1?'s':''}, ${m} minuto${m!==1?'s':''} y ${s} segundo${s!==1?'s':''}.`;
     }, 10000);
+
+    // === Fuegos artificiales ===
+    const fxCanvas = document.getElementById('fx');
+    const ctx = fxCanvas.getContext('2d');
+    let particles = [], animId=null, running=false;
+
+    function resizeFx(){ fxCanvas.width = innerWidth; fxCanvas.height = innerHeight; }
+    addEventListener('resize', resizeFx); resizeFx();
+
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+    function hsl(h, s, l){ return `hsl(${h} ${s}% ${l}%)`; }
+
+    function spawnBurst(x, y){
+      const hue = rand(0,360);
+      const count = 60;
+      for(let i=0;i<count;i++){
+        const angle = (i / count) * Math.PI * 2;
+        const speed = rand(1.5, 4.5);
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: rand(40,70),
+          alpha: 1,
+          color: hsl(hue + rand(-20,20), 80, 60)
+        });
+      }
+    }
+
+    function animate(){
+      ctx.clearRect(0,0,fxCanvas.width, fxCanvas.height);
+      for(let i=particles.length-1;i>=0;i--){
+        const p = particles[i];
+        p.vy += 0.03; // gravedad suave
+        p.x += p.vx; p.y += p.vy;
+        p.life -= 1; p.alpha -= 0.012;
+        if(p.life <= 0 || p.alpha <= 0 || p.y>fxCanvas.height){ particles.splice(i,1); continue; }
+        ctx.globalAlpha = Math.max(p.alpha, 0);
+        ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fillStyle = p.color; ctx.fill();
+      }
+      if(running || particles.length){ animId = requestAnimationFrame(animate); }
+    }
+
+    function startFireworks(durationMs=4000){
+      if(animId) cancelAnimationFrame(animId);
+      running = true;
+      const start = performance.now();
+      (function loop(t){
+        if(t - start < durationMs){
+          const x = rand(fxCanvas.width*0.15, fxCanvas.width*0.85);
+          const y = rand(fxCanvas.height*0.15, fxCanvas.height*0.55);
+          spawnBurst(x, y);
+          setTimeout(()=>loop(performance.now()), rand(200, 450));
+        } else {
+          running = false;
+        }
+      })(start);
+      animate();
+      // auto limpiar después
+      setTimeout(()=>{ running=false; }, durationMs + 1200);
+    }
+
+    // === "Tests" básicos para depurar (actívalos con ?test=1 en la URL) ===
+    try {
+      const qs = new URLSearchParams(location.search);
+      if (qs.get('test') === '1'){
+        console.log('%c[TEST] Iniciando pruebas…','color:#22d3ee');
+        console.assert(pad(5)==='05', 'pad(5) debe ser "05"');
+        console.assert(pad(12)==='12', 'pad(12) debe ser "12"');
+        const sample = breakdown((1*86400 + 2*3600 + 3*60 + 4)*1000);
+        console.assert(sample.days===1 && sample.hours===2 && sample.minutes===3 && sample.seconds===4, 'breakdown incorrecto');
+        const t = new Date();
+        const td = new Date(t.getFullYear(), t.getMonth(), t.getDate(), HH, MM, 0, 0);
+        console.assert(td.getHours()===HH && td.getMinutes()===MM, 'targetDate con hora/min incorrectos');
+        console.log('%c[TEST] OK','color:#16a34a');
+      }
+    } catch(e){ console.warn('Tests no ejecutados:', e); }
   </script>
 </body>
 </html>
