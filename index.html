@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Revelación a las 22:30</title>
+  <title>Cuenta atrás</title>
   <meta name="description" content="Cuenta atrás que revela una imagen hoy a una hora configurable (hora local del navegador)." />
   <style>
     :root{
@@ -28,6 +28,7 @@
       border:1px solid rgba(255,255,255,0.08);
       border-radius:24px; padding:32px; box-shadow:0 20px 50px rgba(0,0,0,0.35);
       backdrop-filter: blur(10px);
+      display:flex; flex-direction:column; align-items:center;
     }
     h1{margin:0 0 10px; font-weight:800; letter-spacing:0.5px}
     .sub{color:var(--muted); margin:0 0 24px}
@@ -57,7 +58,6 @@
     </section>
 
     <section id="reveal-card" class="card reveal hidden">
-      <h1 id="reveal-message">🎉 ¡Desbloqueado!</h1>
       <div id="image-wrap"><img id="reveal-image" alt="Imagen revelada" loading="lazy" /></div>
     </section>
 
@@ -68,12 +68,10 @@
 
   <script>
     // === CONFIGURACIÓN RÁPIDA ===
-
     const CONFIG = {
-      horaObjetivo: "18:36", // hora de revelación en formato 24h (HH:MM)
-      mensajeAntes: "Revelación a las", // texto que aparece antes de la hora
-      mensajeRevelado: "📰 ¡La noticia ha sido revelada!", // texto que aparece cuando llega la hora
-      imagen: "img.jpg" // nombre o ruta de la imagen a mostrar
+      horaObjetivo: "18:45", // hora de revelación (HH:MM formato 24h)
+      mensajeAntes: "La noticia se revelará a las", // texto antes de la hora
+      imagen: "img.jpg" // imagen a mostrar
     };
 
     // === LÓGICA ===
@@ -82,8 +80,6 @@
     const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), HH, MM, 0, 0);
 
     document.getElementById('headline').innerHTML = `${CONFIG.mensajeAntes} <span id="target-text">${CONFIG.horaObjetivo}</span>`;
-    const revealMsg = document.getElementById('reveal-message');
-    revealMsg.textContent = CONFIG.mensajeRevelado;
 
     const $d = document.getElementById('d');
     const $h = document.getElementById('h');
