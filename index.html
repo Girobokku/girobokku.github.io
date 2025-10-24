@@ -4,10 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Revelación a las 22:30</title>
-  <meta name="description" content="Cuenta atrás que revela una imagen hoy a las 22:30 (hora local del navegador)." />
-  <meta property="og:title" content="Revelación a las 22:30" />
-  <meta property="og:description" content="Cuenta atrás que revela una imagen hoy a las 22:30 (hora local del navegador)." />
-  <meta property="og:type" content="website" />
+  <meta name="description" content="Cuenta atrás que revela una imagen hoy a una hora configurable (hora local del navegador)." />
   <style>
     :root{
       --bg: #0f172a;
@@ -41,7 +38,6 @@
     .hidden{display:none !important}
     .reveal{display:flex; justify-content:center; align-items:center; padding:8px;}
     .reveal img{max-width:100%; height:auto; border-radius:20px; box-shadow:0 12px 40px rgba(0,0,0,.35)}
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
     @media (max-width:520px){
       .grid{grid-template-columns: repeat(2, minmax(0,1fr))}
     }
@@ -50,7 +46,7 @@
 <body>
   <main>
     <section id="countdown-card" class="card" aria-live="polite">
-      <h1>Revelación a las <span id="target-text">22:30</span></h1>
+      <h1 id="headline">Revelación a las <span id="target-text">22:30</span></h1>
       <p id="helper" class="sub">Faltan…</p>
       <div class="grid" role="timer" aria-atomic="true" aria-live="polite">
         <div class="tile"><div class="num" id="d">0</div><div class="label">días</div></div>
@@ -61,7 +57,7 @@
     </section>
 
     <section id="reveal-card" class="card reveal hidden">
-      <h1>🎉 ¡Desbloqueado!</h1>
+      <h1 id="reveal-message">🎉 ¡Desbloqueado!</h1>
       <div id="image-wrap"><img id="reveal-image" alt="Imagen revelada" loading="lazy" /></div>
     </section>
 
@@ -71,34 +67,23 @@
   </main>
 
   <script>
-    const params = new URLSearchParams(location.search);
-    const DEFAULT_TIME = "22:30";
-    const timeStr = (params.get('time') || DEFAULT_TIME).trim();
-    const dateStr = (params.get('date') || '').trim();
-    const imageSrc = (params.get('image') || 'imagen.jpg').trim();
-    const pageTitle = (params.get('title') || 'Revelación a las ' + timeStr).trim();
+    // === CONFIGURACIÓN RÁPIDA ===
 
-    document.title = pageTitle;
+    const CONFIG = {
+      horaObjetivo: "22:00", // hora de revelación en formato 24h (HH:MM)
+      mensajeAntes: "Revelación a las", // texto que aparece antes de la hora
+      mensajeRevelado: "📰 ¡La noticia ha sido revelada!", // texto que aparece cuando llega la hora
+      imagen: "img.jpg" // nombre o ruta de la imagen a mostrar
+    };
 
-    function buildTargetDate() {
-      const now = new Date();
-      let base = now;
-      if (dateStr) {
-        const [Y, M, D] = dateStr.split('-').map(Number);
-        base = new Date(Y, (M - 1), D);
-      }
-      const [HH, MM] = timeStr.split(':').map(Number);
-      const target = new Date(base.getFullYear(), base.getMonth(), base.getDate(), HH, MM || 0, 0, 0);
-      return target;
-    }
+    // === LÓGICA ===
+    const [HH, MM] = CONFIG.horaObjetivo.split(":").map(Number);
+    const now = new Date();
+    const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), HH, MM, 0, 0);
 
-    const targetDate = buildTargetDate();
-
-    const targetText = document.getElementById('target-text');
-    try {
-      const fmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute:'2-digit' });
-      targetText.textContent = fmt.format(targetDate);
-    } catch { targetText.textContent = timeStr; }
+    document.getElementById('headline').innerHTML = `${CONFIG.mensajeAntes} <span id="target-text">${CONFIG.horaObjetivo}</span>`;
+    const revealMsg = document.getElementById('reveal-message');
+    revealMsg.textContent = CONFIG.mensajeRevelado;
 
     const $d = document.getElementById('d');
     const $h = document.getElementById('h');
@@ -108,7 +93,7 @@
     const $countdownCard = document.getElementById('countdown-card');
     const $revealCard = document.getElementById('reveal-card');
     const $revealImg = document.getElementById('reveal-image');
-    $revealImg.src = imageSrc;
+    $revealImg.src = CONFIG.imagen;
 
     function pad(n){ return String(n).padStart(2,'0'); }
 
